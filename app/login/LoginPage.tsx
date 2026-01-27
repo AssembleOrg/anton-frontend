@@ -43,6 +43,7 @@ export function LoginPage() {
           autoPlay
           loop
           playsInline
+          webkit-playsinline="true"
           className='h-full w-full object-cover'
         />
         {/* Un degradado muy sutil solo para legibilidad, casi invisible */}
@@ -87,7 +88,7 @@ export function LoginPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: easeLuxury }}
               // MOBILE: Bottom Card | DESKTOP: Left Sidebar
-              className='absolute z-40 flex h-[100dvh] w-full flex-col justify-end overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-24 md:left-0 md:top-0 md:w-[450px] md:items-center md:justify-center md:border-r md:border-white/10 md:bg-transparent md:backdrop-blur-3xl md:px-0 md:pb-0 md:pt-0'
+              className='[transform:translateZ(0)] [backface-visibility:hidden] absolute z-40 flex h-[100dvh] w-full flex-col justify-end overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-24 md:left-0 md:top-0 md:w-[450px] md:items-center md:justify-center md:border-r md:border-white/10 md:bg-transparent md:backdrop-blur-3xl md:px-0 md:pb-0 md:pt-0'
             >
               <div className='pointer-events-none absolute inset-x-0 bottom-0 h-[65dvh] bg-gradient-to-t from-black/70 via-black/25 to-transparent md:hidden' />
               {/* Tarjeta Mobile (Solo blur abajo) */}
@@ -95,7 +96,7 @@ export function LoginPage() {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.75, ease: easeLuxury, delay: 0.08 }}
-                className='relative z-10 mx-auto w-full max-w-[420px] rounded-[2.5rem] border border-white/10 bg-gradient-to-b from-black/55 to-black/25 px-8 pb-8 pt-8 shadow-[0_-30px_90px_rgba(0,0,0,0.55)] backdrop-blur-xl md:mx-auto md:w-full md:max-w-[320px] md:rounded-none md:border-none md:bg-transparent md:[background-image:none] md:px-0 md:pb-0 md:pt-0 md:shadow-none md:backdrop-blur-0'
+                className='[transform:translateZ(0)] [backface-visibility:hidden] relative z-10 mx-auto w-full max-w-[420px] rounded-[2.5rem] border border-white/10 bg-gradient-to-b from-black/55 to-black/25 px-8 pb-8 pt-8 shadow-[0_-30px_90px_rgba(0,0,0,0.55)] backdrop-blur-xl md:mx-auto md:w-full md:max-w-[320px] md:rounded-none md:border-none md:bg-transparent md:[background-image:none] md:px-0 md:pb-0 md:pt-0 md:shadow-none md:backdrop-blur-0'
               >
                 <div className='max-w-[320px] mx-auto md:mx-auto text-left'>
                   <span className='text-[10px] tracking-[0.4em] text-brand-light font-medium'>
@@ -211,6 +212,7 @@ function LogoContent({
               alt='Anton'
               fill
               unoptimized
+              sizes="(max-width: 768px) 120px, 180px"
               className='object-contain'
             />
           </motion.div>
@@ -226,6 +228,7 @@ function LogoContent({
               src='/logo_Anton_blanco.png'
               alt='Anton'
               fill
+              sizes="(max-width: 768px) 120px, 180px"
               className='object-contain'
             />
           </motion.div>

@@ -5,11 +5,14 @@ import { Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useState } from 'react';
+import { useLogin } from '../features/auth/hooks';
+import { toast } from 'sonner';
 
 const easeLuxury: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 export function LoginPage() {
   const router = useRouter();
+  const loginMutation = useLogin();
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -27,6 +30,8 @@ export function LoginPage() {
     };
   }, []);
 
+  // ✅ Removed useEffect anti-pattern - using React Query callbacks instead
+
   return (
     <main className='relative h-[100dvh] w-full select-none overflow-hidden bg-black font-sans text-foreground'>
       {/* CAPA 1: VIDEO ORIGINAL (Sin filtros pesados) */}
@@ -43,7 +48,7 @@ export function LoginPage() {
           autoPlay
           loop
           playsInline
-          webkit-playsinline="true"
+          webkit-playsinline='true'
           className='h-full w-full object-cover'
         />
         {/* Un degradado muy sutil solo para legibilidad, casi invisible */}
@@ -110,7 +115,27 @@ export function LoginPage() {
                     className='space-y-8'
                     onSubmit={(e) => {
                       e.preventDefault();
-                      router.push('/home');
+                      console.log('[LoginPage] Form submitted', {
+                        email,
+                        password: '***',
+                      });
+                      loginMutation.mutate(
+                        { email, password },
+                        {
+                          onSuccess: () => {
+                            console.log('[LoginPage] Login SUCCESS');
+                            toast.success('Bienvenido');
+                            console.log(
+                              '[LoginPage] Redirecting to /portfolio',
+                            );
+                            router.push('/portfolio');
+                          },
+                          onError: (error) => {
+                            console.log('[LoginPage] Login ERROR', error);
+                            toast.error('Credenciales incorrectas');
+                          },
+                        },
+                      );
                     }}
                   >
                     <div className='flex flex-col gap-2'>
@@ -126,7 +151,7 @@ export function LoginPage() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder='admin@anton.com'
+                        placeholder='tu@email.com'
                         className='w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-[14px] font-light text-white placeholder:text-white/25 outline-none transition-colors focus:border-brand-light/50 focus:ring-1 focus:ring-brand-light/30 md:rounded-none md:border-0 md:border-b md:border-white/20 md:bg-transparent md:px-0 md:py-2 md:text-base md:placeholder:text-white/20 md:focus:border-brand-light md:focus:ring-0'
                       />
                     </div>
@@ -170,9 +195,10 @@ export function LoginPage() {
 
                     <button
                       type='submit'
-                      className='w-full rounded-2xl bg-brand py-4 text-[11px] font-bold tracking-[0.3em] text-white shadow-[0_18px_60px_rgba(75,83,64,0.25)] transition-all duration-500 active:scale-[0.99] md:hover:bg-brand-light md:hover:shadow-[0_0_30px_rgba(75,83,64,0.4)]'
+                      disabled={loginMutation.isPending}
+                      className='w-full rounded-2xl bg-brand py-4 text-[11px] font-bold tracking-[0.3em] text-white shadow-[0_18px_60px_rgba(75,83,64,0.25)] transition-all duration-500 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed md:hover:bg-brand-light md:hover:shadow-[0_0_30px_rgba(75,83,64,0.4)] md:disabled:hover:bg-brand'
                     >
-                      INGRESAR
+                      {loginMutation.isPending ? 'INGRESANDO...' : 'INGRESAR'}
                     </button>
                   </form>
                 </div>
@@ -212,7 +238,7 @@ function LogoContent({
               alt='Anton'
               fill
               unoptimized
-              sizes="(max-width: 768px) 120px, 180px"
+              sizes='(max-width: 768px) 120px, 180px'
               className='object-contain'
             />
           </motion.div>
@@ -228,7 +254,7 @@ function LogoContent({
               src='/logo_Anton_blanco.png'
               alt='Anton'
               fill
-              sizes="(max-width: 768px) 120px, 180px"
+              sizes='(max-width: 768px) 120px, 180px'
               className='object-contain'
             />
           </motion.div>

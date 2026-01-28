@@ -78,3 +78,44 @@ body {
     image-rendering: -webkit-optimize-contrast;
   }
 }
+
+/* GPU Acceleration utilities */
+.gpu-accelerated {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.will-animate {
+  will-change: transform, opacity;
+}
+
+/* Card hover shadows (usar con Tailwind classes) */
+.card-shadow-rest {
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.card-shadow-hover {
+  box-shadow:
+    0 8px 48px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(107, 108, 93, 0.2),
+    0 0 24px rgba(107, 108, 93, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Shimmer animation para skeleton loading */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useAppStore } from '../features/auth/store';
 import { useEffect } from 'react';
+import { PageTransition } from '../components/PageTransition';
 
 export default function ProtectedLayout({
   children,
@@ -21,5 +22,5 @@ export default function ProtectedLayout({
   // Don't render anything while checking auth
   if (!token) return null;
 
-  return <>{children}</>;
+  return <PageTransition>{children}</PageTransition>;
 }

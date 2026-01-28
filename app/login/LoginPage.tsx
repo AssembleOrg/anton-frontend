@@ -6,17 +6,23 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useState } from 'react';
 import { useLogin } from '../features/auth/hooks';
+import { useAppStore } from '../features/auth/store';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { fetchMyConsorcios } from '../features/consorcios/api';
 
 const easeLuxury: [number, number, number, number] = [0.16, 1, 0.3, 1];
+const easeExit: [number, number, number, number] = [0.4, 0, 0.6, 1];
 
 export function LoginPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const loginMutation = useLogin();
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isExiting, setIsExiting] = useState(false);
 
   const emailId = useId();
   const passwordId = useId();
@@ -37,8 +43,8 @@ export function LoginPage() {
       {/* CAPA 1: VIDEO ORIGINAL (Sin filtros pesados) */}
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: step >= 1 ? 1 : 0 }}
-        transition={{ duration: 1, ease: easeLuxury }}
+        animate={{ opacity: isExiting ? 0 : step >= 1 ? 1 : 0 }}
+        transition={{ duration: isExiting ? 0.5 : 1, ease: isExiting ? easeExit : easeLuxury }}
         className='absolute inset-0 z-0'
       >
         <video
@@ -86,11 +92,12 @@ export function LoginPage() {
         </div>
 
         {/* CAPA 3: EL FORMULARIO */}
-        <AnimatePresence>
-          {step === 2 && (
+        <AnimatePresence mode="wait">
+          {step === 2 && !isExiting && (
             <motion.aside
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.8, ease: easeLuxury }}
               // MOBILE: Bottom Card | DESKTOP: Left Sidebar
               className='[transform:translateZ(0)] [backface-visibility:hidden] absolute z-40 flex h-[100dvh] w-full flex-col justify-end overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-24 md:left-0 md:top-0 md:w-[450px] md:items-center md:justify-center md:border-r md:border-white/10 md:bg-transparent md:backdrop-blur-3xl md:px-0 md:pb-0 md:pt-0'
@@ -122,13 +129,38 @@ export function LoginPage() {
                       loginMutation.mutate(
                         { email, password },
                         {
-                          onSuccess: () => {
+                          onSuccess: async () => {
                             console.log('[LoginPage] Login SUCCESS');
-                            toast.success('Bienvenido');
-                            console.log(
-                              '[LoginPage] Redirecting to /portfolio',
-                            );
-                            router.push('/portfolio');
+
+                            // ✅ Toast personalizado con nombre del usuario
+                            const { user } = useAppStore.getState();
+                            const greeting = user?.first_name
+                              ? `¡Bienvenido, ${user.first_name}!`
+                              : '¡Bienvenido!';
+                            toast.success(greeting);
+
+                            // ✅ Prefetch consorcios data inmediatamente
+                            try {
+                              await queryClient.prefetchQuery({
+                                queryKey: ['my_consorcios'],
+                                queryFn: fetchMyConsorcios,
+                              });
+                              console.log('[LoginPage] Consorcios prefetched successfully');
+                            } catch (error) {
+                              console.warn('[LoginPage] Prefetch failed, will load on page', error);
+                              // No bloqueamos la navegación si falla el prefetch
+                            }
+
+                            // Start exit animation
+                            setIsExiting(true);
+
+                            // Delay router.push for coordinated transition
+                            setTimeout(() => {
+                              console.log(
+                                '[LoginPage] Redirecting to /portfolio',
+                              );
+                              router.push('/portfolio');
+                            }, 200);
                           },
                           onError: (error) => {
                             console.log('[LoginPage] Login ERROR', error);

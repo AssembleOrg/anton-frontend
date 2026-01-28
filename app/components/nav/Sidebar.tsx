@@ -4,7 +4,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { LogOut, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useAppStore } from '../../features/auth/store';
 
 const easeLuxury: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
@@ -15,6 +17,9 @@ export function Sidebar({
   open: boolean;
   onClose: () => void;
 }) {
+  const router = useRouter();
+  const activeConsorcioName = useAppStore((state) => state.activeConsorcioName);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -108,6 +113,25 @@ export function Sidebar({
                   </button>
                 </div>
               </div>
+
+              {/* Building Indicator */}
+              <div className="border-b border-white/5 px-8 py-6">
+                <div className="space-y-1">
+                  <div className="text-[9px] font-mono tracking-[0.25em] text-beige/60 uppercase">
+                    Edificio
+                  </div>
+                  <div className="text-lg font-light tracking-[0.3em] text-beige">
+                    {activeConsorcioName || 'SELECCIONAR PROPIEDAD'}
+                  </div>
+                  <button
+                    onClick={() => router.push('/portfolio')}
+                    className="mt-2 block text-[8px] uppercase tracking-[0.3em] text-beige/40 transition-opacity hover:opacity-100 cursor-pointer"
+                  >
+                    Cambiar Unidad
+                  </button>
+                </div>
+              </div>
+
               <div className='flex-1 px-6 py-10'>
                 <nav className='space-y-7'>
                   {items.map((item) => (

@@ -5,15 +5,24 @@ import { Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useState } from 'react';
+import { useLogin } from '../features/auth/hooks';
+import { useAppStore } from '../features/auth/store';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { fetchMyConsorcios } from '../features/consorcios/api';
 
 const easeLuxury: [number, number, number, number] = [0.16, 1, 0.3, 1];
+const easeExit: [number, number, number, number] = [0.4, 0, 0.6, 1];
 
 export function LoginPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const loginMutation = useLogin();
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isExiting, setIsExiting] = useState(false);
 
   const emailId = useId();
   const passwordId = useId();
@@ -27,13 +36,15 @@ export function LoginPage() {
     };
   }, []);
 
+  // ✅ Removed useEffect anti-pattern - using React Query callbacks instead
+
   return (
     <main className='relative h-[100dvh] w-full select-none overflow-hidden bg-black font-sans text-foreground'>
       {/* CAPA 1: VIDEO ORIGINAL (Sin filtros pesados) */}
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: step >= 1 ? 1 : 0 }}
-        transition={{ duration: 1, ease: easeLuxury }}
+        animate={{ opacity: isExiting ? 0 : step >= 1 ? 1 : 0 }}
+        transition={{ duration: isExiting ? 0.5 : 1, ease: isExiting ? easeExit : easeLuxury }}
         className='absolute inset-0 z-0'
       >
         <video
@@ -43,7 +54,7 @@ export function LoginPage() {
           autoPlay
           loop
           playsInline
-          webkit-playsinline="true"
+          webkit-playsinline='true'
           className='h-full w-full object-cover'
         />
         {/* Un degradado muy sutil solo para legibilidad, casi invisible */}
@@ -81,11 +92,12 @@ export function LoginPage() {
         </div>
 
         {/* CAPA 3: EL FORMULARIO */}
-        <AnimatePresence>
-          {step === 2 && (
+        <AnimatePresence mode="wait">
+          {step === 2 && !isExiting && (
             <motion.aside
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.8, ease: easeLuxury }}
               // MOBILE: Bottom Card | DESKTOP: Left Sidebar
               className='[transform:translateZ(0)] [backface-visibility:hidden] absolute z-40 flex h-[100dvh] w-full flex-col justify-end overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-24 md:left-0 md:top-0 md:w-[450px] md:items-center md:justify-center md:border-r md:border-white/10 md:bg-transparent md:backdrop-blur-3xl md:px-0 md:pb-0 md:pt-0'
@@ -110,7 +122,52 @@ export function LoginPage() {
                     className='space-y-8'
                     onSubmit={(e) => {
                       e.preventDefault();
-                      router.push('/home');
+                      console.log('[LoginPage] Form submitted', {
+                        email,
+                        password: '***',
+                      });
+                      loginMutation.mutate(
+                        { email, password },
+                        {
+                          onSuccess: async () => {
+                            console.log('[LoginPage] Login SUCCESS');
+
+                            // ✅ Toast personalizado con nombre del usuario
+                            const { user } = useAppStore.getState();
+                            const greeting = user?.first_name
+                              ? `¡Bienvenido, ${user.first_name}!`
+                              : '¡Bienvenido!';
+                            toast.success(greeting);
+
+                            // ✅ Prefetch consorcios data inmediatamente
+                            try {
+                              await queryClient.prefetchQuery({
+                                queryKey: ['my_consorcios'],
+                                queryFn: fetchMyConsorcios,
+                              });
+                              console.log('[LoginPage] Consorcios prefetched successfully');
+                            } catch (error) {
+                              console.warn('[LoginPage] Prefetch failed, will load on page', error);
+                              // No bloqueamos la navegación si falla el prefetch
+                            }
+
+                            // Start exit animation
+                            setIsExiting(true);
+
+                            // Delay router.push for coordinated transition
+                            setTimeout(() => {
+                              console.log(
+                                '[LoginPage] Redirecting to /portfolio',
+                              );
+                              router.push('/portfolio');
+                            }, 200);
+                          },
+                          onError: (error) => {
+                            console.log('[LoginPage] Login ERROR', error);
+                            toast.error('Credenciales incorrectas');
+                          },
+                        },
+                      );
                     }}
                   >
                     <div className='flex flex-col gap-2'>
@@ -126,7 +183,7 @@ export function LoginPage() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder='admin@anton.com'
+                        placeholder='tu@email.com'
                         className='w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-[14px] font-light text-white placeholder:text-white/25 outline-none transition-colors focus:border-brand-light/50 focus:ring-1 focus:ring-brand-light/30 md:rounded-none md:border-0 md:border-b md:border-white/20 md:bg-transparent md:px-0 md:py-2 md:text-base md:placeholder:text-white/20 md:focus:border-brand-light md:focus:ring-0'
                       />
                     </div>
@@ -170,9 +227,10 @@ export function LoginPage() {
 
                     <button
                       type='submit'
-                      className='w-full rounded-2xl bg-brand py-4 text-[11px] font-bold tracking-[0.3em] text-white shadow-[0_18px_60px_rgba(75,83,64,0.25)] transition-all duration-500 active:scale-[0.99] md:hover:bg-brand-light md:hover:shadow-[0_0_30px_rgba(75,83,64,0.4)]'
+                      disabled={loginMutation.isPending}
+                      className='w-full rounded-2xl bg-brand py-4 text-[11px] font-bold tracking-[0.3em] text-white shadow-[0_18px_60px_rgba(75,83,64,0.25)] transition-all duration-500 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed md:hover:bg-brand-light md:hover:shadow-[0_0_30px_rgba(75,83,64,0.4)] md:disabled:hover:bg-brand'
                     >
-                      INGRESAR
+                      {loginMutation.isPending ? 'INGRESANDO...' : 'INGRESAR'}
                     </button>
                   </form>
                 </div>
@@ -212,7 +270,7 @@ function LogoContent({
               alt='Anton'
               fill
               unoptimized
-              sizes="(max-width: 768px) 120px, 180px"
+              sizes='(max-width: 768px) 120px, 180px'
               className='object-contain'
             />
           </motion.div>
@@ -228,7 +286,7 @@ function LogoContent({
               src='/logo_Anton_blanco.png'
               alt='Anton'
               fill
-              sizes="(max-width: 768px) 120px, 180px"
+              sizes='(max-width: 768px) 120px, 180px'
               className='object-contain'
             />
           </motion.div>

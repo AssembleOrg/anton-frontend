@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Montserrat } from 'next/font/google';
 import './globals.css';
 import { Navbar } from './components/nav/Navbar';
+import { Providers } from './components/Providers';
 
 const montserrat = Montserrat({
   variable: '--font-sans',
@@ -34,8 +35,10 @@ export default function RootLayout({
       <body
         className={`${montserrat.variable} bg-background text-foreground antialiased`}
       >
-        <Navbar />
-        {children}
+        <Providers>
+          <Navbar />
+          {children}
+        </Providers>
       </body>
     </html>
   );

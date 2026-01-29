@@ -26,6 +26,10 @@ interface AppStore {
   activeConsorcioId: string | null;
   activeConsorcioName: string | null;
 
+  // BuildingMenu state
+  buildingMenuActiveId: string | null;
+  setBuildingMenuActiveId: (id: string | null) => void;
+
   // Actions
   setAuth: (token: string, refreshToken: string, user: User | null) => void;
   clearAuth: () => void;
@@ -40,6 +44,7 @@ export const useAppStore = create<AppStore>()(
       user: null,
       activeConsorcioId: null,
       activeConsorcioName: null,
+      buildingMenuActiveId: null,
 
       setAuth: (token, refreshToken, user) => {
         console.log('[Store] setAuth called', { hasToken: !!token, hasRefresh: !!refreshToken, user });
@@ -61,6 +66,8 @@ export const useAppStore = create<AppStore>()(
         activeConsorcioId: id,
         activeConsorcioName: name,
       }),
+
+      setBuildingMenuActiveId: (id) => set({ buildingMenuActiveId: id }),
     }),
     {
       name: 'anton-arts-storage', // localStorage key
@@ -70,6 +77,7 @@ export const useAppStore = create<AppStore>()(
         activeConsorcioId: state.activeConsorcioId,
         activeConsorcioName: state.activeConsorcioName,
         user: state.user, // ✅ Persistir user también
+        buildingMenuActiveId: state.buildingMenuActiveId, // Persist active floor
       }),
       // Hydration safety: Si hay token pero no user, decodear automáticamente
       onRehydrateStorage: () => (state) => {

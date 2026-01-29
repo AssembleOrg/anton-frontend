@@ -4,6 +4,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import { useMemo, useState } from 'react';
+import { FinanzasPanel } from './FinanzasPanel';
+import { FinanzasModal } from './FinanzasModal';
+import { BuildingFloorModal } from './BuildingFloorModal';
+import { ConstructionPanel } from './ConstructionPanel';
+import { useAppStore } from '../features/auth/store';
 
 type BuildingMenuItem = {
   id: string;
@@ -84,7 +89,7 @@ function FloorImage({
           'ease-[cubic-bezier(0.22,1,0.36,1)]',
           isActive
             ? 'grayscale-0 blur-0 brightness-100'
-            : 'grayscale blur-[1px] brightness-95',
+            : 'grayscale blur-0 brightness-95',
           'image-rendering-auto',
         ].join(' ')}
         sizes='100vw'
@@ -98,11 +103,13 @@ function Floors({
   activeId,
   setActiveId,
   layout,
+  onOpenModal,
 }: {
   items: BuildingMenuItem[];
   activeId: string | null;
   setActiveId: (id: string) => void;
   layout: BuildingMenuLayout;
+  onOpenModal?: (floorId: string) => void;
 }) {
   const hasActive = activeId !== null;
 
@@ -121,94 +128,113 @@ function Floors({
               : 1.25;
 
         return (
-          <motion.button
+          <motion.div
             key={item.id}
-            type='button'
             layout
-            aria-pressed={isActive}
-            onClick={() => setActiveId(item.id)}
-            onMouseEnter={
-              layout === 'desktop' ? () => setActiveId(item.id) : undefined
-            }
             animate={{ flexGrow }}
             transition={{
               duration: layout === 'desktop' ? 0.9 : 0.95,
               ease: easeOutLuxury,
             }}
-            className='group relative w-full basis-0 overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-brand/70'
+            className='group relative w-full basis-0 overflow-hidden'
           >
-            <div className='absolute inset-0'>
-              <FloorImage
-                imageBase={item.imageBase}
-                isActive={isActive}
-                priority={item.id === 'amenities'}
-                seed={index}
-                objectPosition={
-                  isActive ? 'center' : item.objectPositionCollapsed
-                }
-              />
+            {/* Button solo para imagen + título */}
+            <motion.button
+              type='button'
+              aria-pressed={isActive}
+              onClick={() => setActiveId(item.id)}
+              onMouseEnter={
+                layout === 'desktop' ? () => setActiveId(item.id) : undefined
+              }
+              className='relative h-full w-full overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-brand/70'
+            >
+              <div className='absolute inset-0'>
+                <FloorImage
+                  imageBase={item.imageBase}
+                  isActive={isActive}
+                  priority={item.id === 'amenities'}
+                  seed={index}
+                  objectPosition={
+                    isActive ? 'center' : item.objectPositionCollapsed
+                  }
+                />
+                <div
+                  className={[
+                    'absolute inset-0 pointer-events-none',
+                    'bg-gradient-to-b from-black/55 via-black/15 to-black/60',
+                    isActive ? 'opacity-55' : 'opacity-65',
+                  ].join(' ')}
+                />
+                <motion.div
+                  aria-hidden='true'
+                  className='absolute inset-0 pointer-events-none bg-black/10'
+                  initial={false}
+                  animate={{ opacity: isActive ? 0 : 1 }}
+                  transition={{ duration: 0.35, ease: easeOutLuxury }}
+                />
+              </div>
+
               <div
                 className={[
-                  'absolute inset-0 pointer-events-none',
-                  'bg-gradient-to-b from-black/55 via-black/15 to-black/60',
-                  isActive ? 'opacity-55' : 'opacity-65',
+                  'relative flex h-full w-full items-end',
+                  layout === 'desktop'
+                    ? 'px-7 pt-7 pb-10'
+                    : 'px-7 pt-7 pb-[max(2.75rem,env(safe-area-inset-bottom))]',
                 ].join(' ')}
-              />
-              <motion.div
-                aria-hidden='true'
-                className='absolute inset-0 pointer-events-none bg-black/10 backdrop-blur-[2px]'
-                initial={false}
-                animate={{ opacity: isActive ? 0 : 1 }}
-                transition={{ duration: 0.35, ease: easeOutLuxury }}
-              />
-            </div>
+              >
+                {/* Only show title here when NOT active in mobile, or when in desktop */}
+                {!(isActive && layout === 'mobile') && (
+                  <div className='relative z-20 w-full'>
+                    <div className='flex items-center justify-between gap-4'>
+                      <h2 className='text-lg font-medium tracking-widest text-foreground'>
+                        {item.title}
+                      </h2>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.button>
 
-            <div
-              className={[
-                'relative flex h-full w-full items-end',
-                layout === 'desktop'
-                  ? 'px-7 pt-7 pb-10'
-                  : 'px-7 pt-7 pb-[max(2.75rem,env(safe-area-inset-bottom))]',
-              ].join(' ')}
-            >
-              <div className='w-full'>
-                <div className='flex items-center justify-between gap-4'>
-                  <h2 className='text-lg font-medium tracking-widest text-foreground'>
-                    {item.title}
-                  </h2>
-                </div>
+            {/* Panel expandible FUERA del button */}
+            <AnimatePresence initial={false}>
+              {isActive && layout === 'mobile' ? (
+                <motion.div
+                  key='content'
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    transition: {
+                      duration: 0.35,
+                      ease: easeOutLuxury,
+                      delay: 0.2,
+                    },
+                  }}
+                  exit={{
+                    opacity: 0,
+                    y: 0,
+                    transition: { duration: 0.05, ease: easeOutLuxury },
+                  }}
+                  className='absolute bottom-0 left-0 right-0 mx-7 mb-[max(2.75rem,env(safe-area-inset-bottom))] rounded-2xl border border-white/10 bg-black/25 backdrop-blur-md'
+                >
+                  {/* Panel content with title and button */}
+                  <div className='flex items-center justify-between gap-4 p-4'>
+                    {/* Title inside blur panel */}
+                    <h2 className='text-lg font-medium tracking-widest text-foreground'>
+                      {item.title}
+                    </h2>
 
-                <AnimatePresence initial={false}>
-                  {isActive && layout === 'mobile' ? (
-                    <motion.div
-                      key='content'
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{
-                        opacity: 1,
-                        y: 0,
-                        transition: {
-                          duration: 0.35,
-                          ease: easeOutLuxury,
-                          delay: 0.2,
-                        },
-                      }}
-                      exit={{
-                        opacity: 0,
-                        y: 0,
-                        transition: { duration: 0.05, ease: easeOutLuxury },
-                      }}
-                      className='mt-4 inline-flex w-full items-center justify-end gap-4 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 backdrop-blur-md'
-                    >
-                      {/* <span className="text-sm text-muted">Ver detalle</span> */}
+                    {/* Gestionar button */}
+                    <button onClick={() => onOpenModal?.(item.id)}>
                       <span className='inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-medium tracking-wide text-foreground transition-colors hover:bg-brand-light'>
                         Gestionar <ArrowRight className='h-4 w-4' />
                       </span>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-              </div>
-            </div>
-          </motion.button>
+                    </button>
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </motion.div>
         );
       })}
     </div>
@@ -249,14 +275,11 @@ function DesktopContent({
               className='h-full w-full'
             >
               {selected ? (
-                <div className='max-w-2xl rounded-3xl border border-white/10 bg-surface/40 p-10 backdrop-blur-md'>
-                  <div className='text-xs tracking-[0.38em] text-muted'>
-                    PANEL ADMINISTRATIVO
-                  </div>
-                  <div className='mt-4 text-3xl font-medium tracking-widest text-foreground'>
-                    {title}
-                  </div>
-                </div>
+                activeId === 'expensas' ? (
+                  <FinanzasPanel />
+                ) : (
+                  <ConstructionPanel />
+                )
               ) : (
                 <div className='flex h-full w-full items-center'>
                   <div className='max-w-xl'>
@@ -296,21 +319,21 @@ export function BuildingMenu() {
       },
       {
         id: 'expensas',
-        title: 'EXPENSAS',
+        title: 'FINANZAS', // Changed from 'EXPENSAS'
         imageBase: '/2',
         objectPositionCollapsed: 'center',
         href: '/expensas',
       },
       {
         id: 'gestion',
-        title: 'GESTIÓN',
+        title: 'RESIDENTES', // Changed from 'GESTIÓN'
         imageBase: '/3',
         objectPositionCollapsed: 'center',
         href: '/gestion',
       },
       {
         id: 'accesos',
-        title: 'ACCESOS',
+        title: 'ACCESOS', // Unchanged (unique)
         imageBase: '/4',
         objectPositionCollapsed: 'bottom',
         href: '/accesos',
@@ -319,33 +342,54 @@ export function BuildingMenu() {
     [],
   );
 
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const activeId = useAppStore((state) => state.buildingMenuActiveId);
+  const setBuildingMenuActiveId = useAppStore((state) => state.setBuildingMenuActiveId);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalFloorId, setModalFloorId] = useState<string | null>(null);
+
+  const handleOpenModal = (floorId: string) => {
+    setModalFloorId(floorId);
+    setModalOpen(true);
+  };
 
   return (
-    <section className='building-menu h-[100dvh] w-full bg-background'>
-      <div className='h-[100dvh] w-full md:hidden'>
-        <Floors
-          items={items}
-          activeId={activeId}
-          setActiveId={(id) => setActiveId(id)}
-          layout='mobile'
-        />
-      </div>
-
-      <div className='hidden h-[100dvh] w-full md:flex'>
-        <aside className='h-[100dvh] w-[400px] flex-none bg-background'>
+    <>
+      <section className='building-menu h-[100dvh] w-full bg-background'>
+        <div className='h-[100dvh] w-full md:hidden'>
           <Floors
             items={items}
             activeId={activeId}
-            setActiveId={(id) => setActiveId(id)}
-            layout='desktop'
+            setActiveId={(id) => setBuildingMenuActiveId(id)}
+            layout='mobile'
+            onOpenModal={handleOpenModal}
           />
-        </aside>
-        <DesktopContent
-          activeId={activeId}
-          items={items}
+        </div>
+
+        <div className='hidden h-[100dvh] w-full md:flex'>
+          <aside className='h-[100dvh] w-[400px] flex-none bg-background'>
+            <Floors
+              items={items}
+              activeId={activeId}
+              setActiveId={(id) => setBuildingMenuActiveId(id)}
+              layout='desktop'
+            />
+          </aside>
+          <DesktopContent
+            activeId={activeId}
+            items={items}
+          />
+        </div>
+      </section>
+
+      {/* Modal for all floors */}
+      {modalFloorId && (
+        <BuildingFloorModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          floorId={modalFloorId}
+          title={items.find(item => item.id === modalFloorId)?.title ?? ''}
         />
-      </div>
-    </section>
+      )}
+    </>
   );
 }

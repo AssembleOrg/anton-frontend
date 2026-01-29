@@ -19,6 +19,7 @@ export function Sidebar({
 }) {
   const router = useRouter();
   const activeConsorcioName = useAppStore((state) => state.activeConsorcioName);
+  const setBuildingMenuActiveId = useAppStore((state) => state.setBuildingMenuActiveId);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -39,27 +40,31 @@ export function Sidebar({
   const items = [
     {
       num: '01',
-      label: 'DASHBOARD',
-      description: 'Resumen general del consorcio',
-      href: '/dashboard',
+      label: 'AMENITIES',
+      description: 'Áreas comunes y servicios del edificio',
+      href: '/home',
+      buildingMenuId: 'amenities',
     },
     {
       num: '02',
-      label: 'RESIDENTES',
-      description: 'Gestión de unidades y propietarios',
-      href: '/residentes',
+      label: 'FINANZAS',
+      description: 'Pagos, expensas y reportes',
+      href: '/home',
+      buildingMenuId: 'expensas',
     },
     {
       num: '03',
-      label: 'FINANZAS',
-      description: 'Pagos, expensas y reportes',
-      href: '/finanzas',
+      label: 'RESIDENTES',
+      description: 'Gestión de unidades y propietarios',
+      href: '/home',
+      buildingMenuId: 'gestion',
     },
     {
       num: '04',
-      label: 'MANTENIMIENTO',
-      description: 'Órdenes y estado de tareas',
-      href: '/mantenimiento',
+      label: 'ACCESOS',
+      description: 'Control de accesos y seguridad',
+      href: '/home',
+      buildingMenuId: 'accesos',
     },
   ];
 
@@ -139,7 +144,17 @@ export function Sidebar({
                       key={item.href}
                       href={item.href}
                       className='group block'
-                      onClick={onClose}
+                      onClick={(e) => {
+                        // Prevent default navigation if we're setting BuildingMenu state
+                        if (item.buildingMenuId) {
+                          e.preventDefault();
+                          setBuildingMenuActiveId(item.buildingMenuId);
+                          router.push(item.href);
+                        }
+                        // For non-BuildingMenu items (like Dashboard), let Link handle navigation
+
+                        onClose(); // Always close sidebar
+                      }}
                     >
                       <div className='text-[10px] font-light tracking-[0.3em] text-brand-ui'>
                         {item.num}.

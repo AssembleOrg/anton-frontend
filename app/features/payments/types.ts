@@ -10,6 +10,7 @@ export interface Payment {
   note: string | null;
   recorded_by: string;
   recorded_at: string;
+  unit?: string; // Unit/apartment number (optional, from mock data)
 }
 
 export interface PaymentResponse {
@@ -28,3 +29,13 @@ export interface PaymentResponse {
 }
 
 export type PaymentStatus = 'pending' | 'completed' | 'failed';
+
+export interface PendingPayment {
+  id: string;
+  unit: string;              // Apartment number (4B, 1A, 2C)
+  debtor_name: string;       // Person who owes
+  amount: string;            // Amount owed (numeric string)
+  days_overdue: number;      // How many days late
+}
+
+export type PaymentTabType = 'RECIBIDOS' | 'PENDIENTES';

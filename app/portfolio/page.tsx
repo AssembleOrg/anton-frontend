@@ -156,8 +156,6 @@ export default function PortfolioPage() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  console.log('[PortfolioPage] Rendering', { isLoading, isError, hasData: !!myConsorcios });
-
   // Hardcodear los 3 primeros edificios (ANTON 1, 2, 3)
   const realBuildings = useMemo(() => {
     // Obtener el ID real del primer consorcio del backend (si existe)
@@ -192,12 +190,10 @@ export default function PortfolioPage() {
   ];
 
   const handleSelectBuilding = (id: string) => {
-    // ✅ Toast personalizado con nombre del edificio
     const selectedBuilding = allBuildings.find(b => b.id === id);
     const buildingName = selectedBuilding?.name || 'Edificio';
 
     setActiveConsorcio(id, buildingName);
-
     toast.success(`${buildingName} seleccionado`);
     router.push('/home');
   };
